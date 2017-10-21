@@ -245,19 +245,26 @@ func ParseMessage(r *Robot, msg []byte) int {
 	message := &Message{
 		PollType: poll_type,//message group_message discu_message
 		Content:  content,
-		FromUin:  fromUin,//来源
-		SendUin:  sendUin,//发送者
+		FromUin:  fromUin,//来源 群聊id 组聊id 私聊id
+		SendUin:  sendUin,//发送者，私聊为0，其他为发送着id
 		MsgId:    msgId,
 		MsgType:  msgType,// 1文字
 		Time:     sendTime,
-		ToUin:    toUin,//机器人qq号
+		ToUin:    toUin,//接受者id
 		Atable:   atable,
 	}
 	log.Printf("message：%v\n", message)
-	if fromUin == r.uid {
-		log.Printf("to self \n")
+
+	if sendUin == 0 && fromUin == r.uid {
+		log.Printf("来自己的私聊\n")
 		return -1
 	}
+
+	if sendUin > 0 && sendUin == r.uid {
+		log.Printf("来自己的群聊或组聊\n")
+		return -1
+	}
+
 
 	if r.onMessage != nil {
 		r.onMessage(r, message)
