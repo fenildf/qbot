@@ -20,6 +20,7 @@ type H map[string]string
 
 type Robot struct {
 	client       *http.Client
+	uid 		 int
 	onQRChange   func(*Robot, []byte)
 	onCheckLogin func(*Robot) bool
 	onLogin      func(*Robot)
@@ -93,29 +94,31 @@ func (r *Robot) Run() {
 				continue
 			}
 			switch code := regexp_image_state.FindAllStringSubmatch(string(logindata), -1)[0][1]; code {
-			case "65":
-				fmt.Println("二维码已失效")
-				return
-			case "66":
-				//fmt.Println("二维码未失效")
-			case "67":
-				//fmt.Println("二维码正在验证..")
-			case "0":
-				sig_link := ""
-				if reg_sig := regexp.MustCompile(`ptuiCB\(\'0\',\'0\',\'([^\']+)\'`).FindAllStringSubmatch(string(logindata), -1); len(reg_sig) == 1 {
-					sig_link = reg_sig[0][1]
-				} else {
-					fmt.Println("Check Sig Err:")
+				case "65":
+					fmt.Println("二维码已失效")
 					return
-				}
-				if _, err := r.Get(sig_link); err != nil {
-					fmt.Println("Get Err:", err.Error())
+				case "66":
+					fmt.Println("二维码未失效，请扫描")
+				case "67":
+					fmt.Println("二维码正在验证..")
+				case "0":
+					fmt.Println("二维码验证成功")
+					sig_link := ""
+					if reg_sig := regexp.MustCompile(`ptuiCB\(\'0\',\'0\',\'([^\']+)\'`).FindAllStringSubmatch(string(logindata), -1); len(reg_sig) == 1 {
+						sig_link = reg_sig[0][1]//获取扫描成功后的跳转地址
+					} else {
+						fmt.Println("Check Sig Err:")
+						return
+					}
+
+					if _, err := r.Get(sig_link); err != nil {
+						fmt.Println("Get Err:", err.Error())
+						return
+					}
+					break validate_login
+				default:
+					fmt.Println("未知状态(" + code + ")")
 					return
-				}
-				break validate_login
-			default:
-				fmt.Println("未知状态(" + code + ")")
-				return
 			}
 		}
 
@@ -142,6 +145,7 @@ func (r *Robot) Run() {
 	psessiondata, err := r.Post("http://d1.web2.qq.com/channel/login2", H{
 		"r": "{\"ptwebqq\":\"\",\"clientid\":53999199,\"psessionid\":\"\",\"status\":\"online\"}",
 	})
+
 	if err != nil {
 		return
 	}
@@ -157,6 +161,11 @@ func (r *Robot) Run() {
 		return
 	}
 	r.parameter["psessionid"] = psessionid
+
+	uid, err := sj.Get("result").Get("uin").Int()
+	log.Printf("uid:%d",uid)
+	r.uid = uid
+
 	if r.onLogin != nil {
 		r.onLogin(r)
 	}
@@ -167,6 +176,8 @@ func (r *Robot) Run() {
 
 func (r *Robot) pollMessage() {
 	for {
+		fmt.Printf("\n")
+		log.Printf("获取信息...\n")
 		r.header["Origin"] = "http://d1.web2.qq.com"
 		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
 		data, err := r.Post("http://d1.web2.qq.com/channel/poll2", H{
@@ -175,10 +186,11 @@ func (r *Robot) pollMessage() {
 			"psessionid": r.parameter["psessionid"],
 			"key":        "",
 		})
+
 		if err == nil {
 			code := ParseMessage(r, data)
-			if code == 103 {
-				fmt.Println("请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序")
+			if code == 103 {//
+				log.Println("登陆失败。请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序")
 				break
 			}
 		}
@@ -190,13 +202,16 @@ func ParseMessage(r *Robot, msg []byte) int {
 	if err != nil {
 		return -1
 	}
+	//获取消息结果
 	retcode, err := sj.Get("retcode").Int()
+	log.Printf("code：%d\n", retcode)
 	if err != nil {
 		return -1
 	}
 	if retcode != 0 {
 		return retcode
 	}
+	//获取消息类型
 	poll_type, err := sj.Get("result").GetIndex(0).Get("poll_type").String()
 	if err != nil {
 		return -1
@@ -204,7 +219,9 @@ func ParseMessage(r *Robot, msg []byte) int {
 	if len(poll_type) == 0 {
 		return -1
 	}
+	//获取消息内容和meta信息
 	value := sj.Get("result").GetIndex(0).Get("value")
+	//消息内容
 	contentArr, err := value.Get("content").Array()
 	if err != nil {
 		return -1
@@ -226,16 +243,22 @@ func ParseMessage(r *Robot, msg []byte) int {
 	toUin := value.Get("to_uin").MustInt()
 
 	message := &Message{
-		PollType: poll_type,
+		PollType: poll_type,//message group_message discu_message
 		Content:  content,
-		FromUin:  fromUin,
-		SendUin:  sendUin,
+		FromUin:  fromUin,//来源
+		SendUin:  sendUin,//发送者
 		MsgId:    msgId,
-		MsgType:  msgType,
+		MsgType:  msgType,// 1文字
 		Time:     sendTime,
-		ToUin:    toUin,
+		ToUin:    toUin,//机器人qq号
 		Atable:   atable,
 	}
+	log.Printf("message：%v\n", message)
+	if fromUin == r.uid {
+		log.Printf("to self \n")
+		return -1
+	}
+
 	if r.onMessage != nil {
 		r.onMessage(r, message)
 	}
@@ -261,7 +284,6 @@ func (r *Robot) SendToDiscuss(toUin int, message string) error {
 var msg_num int64 = time.Now().Unix() % 1E4 * 1E4
 
 func (r *Robot) sendMessage(sendType string, toUin int, msg string) {
-
 	msg_num++
 
 	r.header["Content-Type"] = "application/x-www-form-urlencoded"
