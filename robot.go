@@ -86,42 +86,43 @@ func (r *Robot) Run() {
 		ticker := time.NewTicker(time.Second * 1)
 		regexp_image_state := regexp.MustCompile(`ptuiCB\(\'(\d+)\'`)
 
-	validate_login:
-		for range ticker.C {
-			ptqrlogin := "https://ssl.ptlogin2.qq.com/ptqrlogin?u1=http%3A%2F%2Fw.qq.com%2Fproxy.html&ptqrtoken=" + r.GetToken(qrsig) + "&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-" + r.GetTimestamp() + "&js_ver=10228&js_type=1&login_sig=&pt_uistyle=40&aid=501004106&daid=164&mibao_css=m_webqq&"
-			logindata, err := r.Get(ptqrlogin)
-			if err != nil {
-				continue
-			}
-			switch code := regexp_image_state.FindAllStringSubmatch(string(logindata), -1)[0][1]; code {
-				case "65":
-					fmt.Println("二维码已失效")
-					return
-				case "66":
-					fmt.Println("二维码未失效，请扫描")
-				case "67":
-					fmt.Println("二维码正在验证..")
-				case "0":
-					fmt.Println("二维码验证成功")
-					sig_link := ""
-					if reg_sig := regexp.MustCompile(`ptuiCB\(\'0\',\'0\',\'([^\']+)\'`).FindAllStringSubmatch(string(logindata), -1); len(reg_sig) == 1 {
-						sig_link = reg_sig[0][1]//获取扫描成功后的跳转地址
-					} else {
-						fmt.Println("Check Sig Err:")
+		validate_login:
+			for range ticker.C {
+				ptqrlogin := "https://ssl.ptlogin2.qq.com/ptqrlogin?u1=http%3A%2F%2Fw.qq.com%2Fproxy.html&ptqrtoken=" + r.GetToken(qrsig) + "&ptredirect=0&h=1&t=1&g=1&from_ui=1&ptlang=2052&action=0-0-" + r.GetTimestamp() + "&js_ver=10228&js_type=1&login_sig=&pt_uistyle=40&aid=501004106&daid=164&mibao_css=m_webqq&"
+				logindata, err := r.Get(ptqrlogin)
+				if err != nil {
+					continue
+				}
+				switch code := regexp_image_state.FindAllStringSubmatch(string(logindata), -1)[0][1]; code {
+					case "65":
+						fmt.Println("二维码已失效")
 						return
-					}
+					case "66":
+						fmt.Println("二维码未失效，请扫描")
+					case "67":
+						fmt.Println("二维码正在验证..")
+					case "0":
+						fmt.Println("二维码验证成功")
+						sig_link := ""
+						if reg_sig := regexp.MustCompile(`ptuiCB\(\'0\',\'0\',\'([^\']+)\'`).FindAllStringSubmatch(string(logindata), -1); len(reg_sig) == 1 {
+							sig_link = reg_sig[0][1]//获取扫描成功后的跳转地址
+						} else {
+							fmt.Println("Check Sig Err:")
+							return
+						}
 
-					if _, err := r.Get(sig_link); err != nil {
-						fmt.Println("Get Err:", err.Error())
+						if _, err := r.Get(sig_link); err != nil {
+							fmt.Println("Get Err:", err.Error())
+							return
+						}
+						break validate_login
+					default:
+						fmt.Println("未知状态(" + code + ")")
 						return
-					}
-					break validate_login
-				default:
-					fmt.Println("未知状态(" + code + ")")
-					return
+				}
 			}
-		}
 
+		//获取vpwebqq
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		vfwebqqdata, err := r.Get("http://s.web2.qq.com/api/getvfwebqq?ptwebqq=&clientid=53999199&psessionid=&t=" + r.GetTimestamp())
 		if err != nil {
@@ -166,6 +167,10 @@ func (r *Robot) Run() {
 	log.Printf("uid:%d",uid)
 	r.uid = uid
 
+	r.getFriend()
+	r.getGroup()
+	r.getSelf()
+	r.getOnline()
 	if r.onLogin != nil {
 		r.onLogin(r)
 	}
@@ -174,17 +179,91 @@ func (r *Robot) Run() {
 	}
 }
 
+func (r *Robot) getFriend() {
+		fmt.Printf("\n")
+		log.Printf("获取好友...\n")
+		r.header["Origin"] = "http://s.web2.qq.com"
+		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
+		data, _ := r.Post("http://s.web2.qq.com/api/get_user_friends2", H{
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			"vfwebqq":r.parameter["vfwebqq"],
+			"hash":"0059006E00950026",
+		})
+		log.Printf("friends:%s", string(data))
+}
+func (r *Robot) getGroup() {
+		fmt.Printf("\n")
+		log.Printf("获取群...\n")
+		r.header["Origin"] = "http://s.web2.qq.com"
+		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
+		data, _ := r.Post("http://s.web2.qq.com/api/get_group_name_list_mask2", H{
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			"vfwebqq":r.parameter["vfwebqq"],
+			"hash":"0059006E00950026",
+		})
+		log.Printf("groups:%s", string(data))
+}
+func (r *Robot) getSelf() {
+		fmt.Printf("\n")
+		log.Printf("获取个人信息...\n")
+		r.header["Origin"] = "http://s.web2.qq.com"
+		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
+		data, _ := r.Post("http://s.web2.qq.com/api/get_self_info2?t=" + r.GetTimestamp(), H{
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
+			"vfwebqq":r.parameter["vfwebqq"],
+			"hash":"0059006E00950026",
+		})
+		log.Printf("self:%s", string(data))
+}
+func (r *Robot) getOnline() {
+		fmt.Printf("\n")
+		log.Printf("获取在线好友...\n")
+		r.header["Origin"] = "http://s.web2.qq.com"
+		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
+		data, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
+		log.Printf("self:%s", string(data))
+}
+/*
+func hash(b int, i string) string {
+	var a H
+	for (s = 0; s < len(i); s++){
+		a[s % 4] ^= i.charCodeAt(s);
+	}
+	var j = ["EC", "OK"], d = [];
+	d[0] = b >> 24 & 255 ^ j[0].charCodeAt(0);
+	d[1] = b >> 16 & 255 ^ j[0].charCodeAt(1);
+	d[2] = b >> 8 & 255 ^ j[1].charCodeAt(0);
+	d[3] = b & 255 ^ j[1].charCodeAt(1);
+	j = [];
+	for (s = 0; s < 8; s++)
+		j[s] = s % 2 == 0 ? a[s >> 1] : d[s >> 1];
+	a = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+	d = "";
+	for (s = 0; s < j.length; s++)
+		d += a[j[s] >> 4 & 15], d += a[j[s] & 15];
+	return d;
+}
+*/
+
 func (r *Robot) pollMessage() {
 	for {
 		fmt.Printf("\n")
 		log.Printf("获取信息...\n")
 		r.header["Origin"] = "http://d1.web2.qq.com"
 		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
+		/*
 		data, err := r.Post("http://d1.web2.qq.com/channel/poll2", H{
 			"ptwebqq":    r.parameter["ptwebqq"],
 			"clientid":   "53999199",
 			"psessionid": r.parameter["psessionid"],
 			"key":        "",
+		})
+		*/
+		data, err := r.Post("http://d1.web2.qq.com/channel/poll2", H{
+			"r": "{\"ptwebqq\":\""+r.parameter["ptwebqq"]+"\",\"clientid\":53999199,\"psessionid\":\""+r.parameter["psessionid"]+"\",\"status\":\"online\"}",
 		})
 
 		if err == nil {
@@ -324,10 +403,12 @@ func (r *Robot) sendMessage(sendType string, toUin int, msg string) {
 }
 
 func (r *Robot) Get(url string) ([]byte, error) {
+	r.header["Content-Type"] = "utf-8"
 	return r.Request("GET", url, nil)
 }
 
 func (r *Robot) Post(url string, param H) ([]byte, error) {
+	r.header["Content-Type"] = "application/x-www-form-urlencoded; param=value"
 	return r.Request("POST", url, param)
 }
 
@@ -343,11 +424,20 @@ func (r *Robot) Request(method, posturl string, param H) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	r.header["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
 	if r.header != nil {
 		for key, value := range r.header {
 			req.Header.Set(key, value)
 		}
 	}
+
+	/*
+	u, _ := url.Parse(posturl)
+	cookies := r.client.Jar.Cookies(u)
+	log.Printf("param:\n%v\n\nheader:\n%v\n\ncookies:\n%v\n\n",v,r.header,cookies)
+	*/
+
 	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, err
