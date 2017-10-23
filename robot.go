@@ -167,16 +167,26 @@ func (r *Robot) Run() {
 	log.Printf("uid:%d",uid)
 	r.uid = uid
 
+	r.getOnline()
+
 	r.getFriend()
 	r.getGroup()
 	r.getSelf()
-	r.getOnline()
 	if r.onLogin != nil {
 		r.onLogin(r)
 	}
 	if r.onMessage != nil {
 		r.pollMessage()
 	}
+}
+
+func (r *Robot) getOnline() {
+		fmt.Printf("\n")
+		log.Printf("获取在线...\n")
+		r.header["Origin"] = "http://s.web2.qq.com"
+		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
+		data, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
+		log.Printf("self:%s", string(data))
 }
 
 func (r *Robot) getFriend() {
@@ -218,14 +228,7 @@ func (r *Robot) getSelf() {
 		})
 		log.Printf("self:%s", string(data))
 }
-func (r *Robot) getOnline() {
-		fmt.Printf("\n")
-		log.Printf("获取在线好友...\n")
-		r.header["Origin"] = "http://s.web2.qq.com"
-		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
-		data, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
-		log.Printf("self:%s", string(data))
-}
+
 /*
 func hash(b int, i string) string {
 	var a H
@@ -268,9 +271,10 @@ func (r *Robot) pollMessage() {
 
 		if err == nil {
 			code := ParseMessage(r, data)
-			if code == 103 {//
+			if code == 103 {
 				log.Println("登陆失败。请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序")
-				break
+				//break
+				r.getOnline()
 			}
 		}
 	}
