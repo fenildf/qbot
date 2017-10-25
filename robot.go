@@ -276,6 +276,9 @@ func (r *Robot) pollMessage() {
 				//break
 				r.getOnline()
 			}
+			if code == 100001 {
+				break
+			}
 		}
 	}
 }
