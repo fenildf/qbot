@@ -196,9 +196,8 @@ func (r *Robot) getFriend() {
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		data, _ := r.Post("http://s.web2.qq.com/api/get_user_friends2", H{
 			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
-			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
 			"vfwebqq":r.parameter["vfwebqq"],
-			"hash":"0059006E00950026",
+			"hash":hash(r.uid, r.parameter["ptwebqq"]),
 		})
 		log.Printf("friends:%s", string(data))
 }
@@ -209,9 +208,8 @@ func (r *Robot) getGroup() {
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		data, _ := r.Post("http://s.web2.qq.com/api/get_group_name_list_mask2", H{
 			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
-			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
 			"vfwebqq":r.parameter["vfwebqq"],
-			"hash":"0059006E00950026",
+			"hash":hash(r.uid, r.parameter["ptwebqq"]),
 		})
 		log.Printf("groups:%s", string(data))
 }
@@ -222,34 +220,41 @@ func (r *Robot) getSelf() {
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		data, _ := r.Post("http://s.web2.qq.com/api/get_self_info2?t=" + r.GetTimestamp(), H{
 			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
-			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
 			"vfwebqq":r.parameter["vfwebqq"],
-			"hash":"0059006E00950026",
+			"hash":hash(r.uid, r.parameter["ptwebqq"]),
 		})
 		log.Printf("self:%s", string(data))
 }
 
-/*
 func hash(b int, i string) string {
-	var a H
-	for (s = 0; s < len(i); s++){
-		a[s % 4] ^= i.charCodeAt(s);
+	a := [4]int{}
+	for s := 0; s < len(i); s++{
+		a[s%4] ^= int(i[s])
 	}
-	var j = ["EC", "OK"], d = [];
-	d[0] = b >> 24 & 255 ^ j[0].charCodeAt(0);
-	d[1] = b >> 16 & 255 ^ j[0].charCodeAt(1);
-	d[2] = b >> 8 & 255 ^ j[1].charCodeAt(0);
-	d[3] = b & 255 ^ j[1].charCodeAt(1);
-	j = [];
-	for (s = 0; s < 8; s++)
-		j[s] = s % 2 == 0 ? a[s >> 1] : d[s >> 1];
-	a = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
-	d = "";
-	for (s = 0; s < j.length; s++)
-		d += a[j[s] >> 4 & 15], d += a[j[s] & 15];
-	return d;
+	
+	j := []string{"EC", "OK"}
+	d := []int{b >> 24 & 255 ^ int(j[0][0]), b >> 16 & 255 ^ int(j[0][1]),b >> 8 & 255 ^ int(j[1][0]),b & 255 ^ int(j[1][1])}
+	fmt.Println(d)
+
+	jj := [8]int{}
+	for s := 0; s < 8; s++{
+		if s%2==0 {
+			jj[s] = a[s >> 1]
+		}else{
+			jj[s] = d[s >> 1]
+		}
+	}	
+	
+	aa := [16]string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"}
+	dd := ""
+	for s := 0; s < len(jj); s++{
+		dd += aa[jj[s] >> 4 & 15]
+		dd += aa[jj[s] & 15]
+	}
+	
+	return dd;
 }
-*/
+
 
 func (r *Robot) pollMessage() {
 	for {
