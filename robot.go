@@ -181,17 +181,17 @@ func (r *Robot) Run() {
 }
 
 func (r *Robot) getOnline() {
-		fmt.Printf("\n")
-		log.Printf("获取在线...\n")
+		//fmt.Printf("\n")
+		//log.Printf("获取在线...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
 		data, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
-		log.Printf("self:%s", string(data))
+		//log.Printf("self:%s", string(data))
 }
 
 func (r *Robot) getFriend() {
-		fmt.Printf("\n")
-		log.Printf("获取好友...\n")
+		//fmt.Printf("\n")
+		//log.Printf("获取好友...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		data, _ := r.Post("http://s.web2.qq.com/api/get_user_friends2", H{
@@ -199,11 +199,11 @@ func (r *Robot) getFriend() {
 			"vfwebqq":r.parameter["vfwebqq"],
 			"hash":hash(r.uid, r.parameter["ptwebqq"]),
 		})
-		log.Printf("friends:%s", string(data))
+		//log.Printf("friends:%s", string(data))
 }
 func (r *Robot) getGroup() {
-		fmt.Printf("\n")
-		log.Printf("获取群...\n")
+		//fmt.Printf("\n")
+		//log.Printf("获取群...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
 		data, _ := r.Post("http://s.web2.qq.com/api/get_group_name_list_mask2", H{
@@ -211,7 +211,7 @@ func (r *Robot) getGroup() {
 			"vfwebqq":r.parameter["vfwebqq"],
 			"hash":hash(r.uid, r.parameter["ptwebqq"]),
 		})
-		log.Printf("groups:%s", string(data))
+		//log.Printf("groups:%s", string(data))
 }
 func (r *Robot) getSelf() {
 		fmt.Printf("\n")
@@ -258,8 +258,8 @@ func hash(b int, i string) string {
 
 func (r *Robot) pollMessage() {
 	for {
-		fmt.Printf("\n")
-		log.Printf("获取信息...\n")
+		//fmt.Printf("\n")
+		//log.Printf("获取信息...\n")
 		r.header["Origin"] = "http://d1.web2.qq.com"
 		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
 		/*
@@ -295,7 +295,7 @@ func ParseMessage(r *Robot, msg []byte) int {
 	}
 	//获取消息结果
 	retcode, err := sj.Get("retcode").Int()
-	log.Printf("code：%d\n", retcode)
+	//log.Printf("code：%d\n", retcode)
 	if err != nil {
 		return -1
 	}
@@ -344,15 +344,15 @@ func ParseMessage(r *Robot, msg []byte) int {
 		ToUin:    toUin,//接受者id
 		Atable:   atable,
 	}
-	log.Printf("message：%v\n", message)
+	//log.Printf("message：%v\n", message)
 
 	if sendUin == 0 && fromUin == r.uid {
-		log.Printf("来自己的私聊\n")
+		//log.Printf("来自己的私聊\n")
 		return -1
 	}
 
 	if sendUin > 0 && sendUin == r.uid {
-		log.Printf("来自己的群聊或组聊\n")
+		//log.Printf("来自己的群聊或组聊\n")
 		return -1
 	}
 
