@@ -98,7 +98,7 @@ func (r *Robot) Run() {
 						fmt.Println("二维码已失效")
 						return
 					case "66":
-						fmt.Println("二维码未失效，请扫描")
+						//fmt.Println("二维码未失效，请扫描")
 					case "67":
 						fmt.Println("二维码正在验证..")
 					case "0":
