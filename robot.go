@@ -185,7 +185,7 @@ func (r *Robot) getOnline() {
 		//log.Printf("获取在线...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2"
-		data, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
+		_, _ := r.Get("http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+r.parameter["vfwebqq"]+"&clientid=53999199&psessionid="+r.parameter["psessionid"]+"&t=" + r.GetTimestamp())
 		//log.Printf("self:%s", string(data))
 }
 
@@ -194,7 +194,7 @@ func (r *Robot) getFriend() {
 		//log.Printf("获取好友...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
-		data, _ := r.Post("http://s.web2.qq.com/api/get_user_friends2", H{
+		_, _ := r.Post("http://s.web2.qq.com/api/get_user_friends2", H{
 			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
 			"vfwebqq":r.parameter["vfwebqq"],
 			"hash":hash(r.uid, r.parameter["ptwebqq"]),
@@ -206,7 +206,7 @@ func (r *Robot) getGroup() {
 		//log.Printf("获取群...\n")
 		r.header["Origin"] = "http://s.web2.qq.com"
 		r.header["Referer"] = "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1"
-		data, _ := r.Post("http://s.web2.qq.com/api/get_group_name_list_mask2", H{
+		_, _ := r.Post("http://s.web2.qq.com/api/get_group_name_list_mask2", H{
 			//"r": "{\"vfwebqq\":\""+r.parameter["vfwebqq"]+"\",\"hash\":\"0059006E00950026\"}",
 			"vfwebqq":r.parameter["vfwebqq"],
 			"hash":hash(r.uid, r.parameter["ptwebqq"]),
