@@ -283,7 +283,7 @@ func (r *Robot) pollMessage() {
 			if code == 103 {
 				log.Println("登陆失败。请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序")
 				//这个是由于Smart QQ多点登录，后端校验失败。需要手动进入官网，检查是否能正常接收消息。如果可以的话点击[设置]->[退出登录]后查看是否恢复正常
-				break
+				//break
 				r.getOnline()
 			}else if code == 108 || code == 114 || code == 121 {
 				log.Println(code, "掉线")
