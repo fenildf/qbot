@@ -281,7 +281,7 @@ func (r *Robot) pollMessage() {
 		if err == nil {
 			code := ParseMessage(r, data)
 			if code == 103 {
-				log.Println("登陆失败。请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序")
+				log.Println("登陆失败。请先在浏览器访问http://w.qq.com/扫码登录，然后退出。重新启动程序，201711错误已修复不用管")
 				//这个是由于Smart QQ多点登录，后端校验失败。需要手动进入官网，检查是否能正常接收消息。如果可以的话点击[设置]->[退出登录]后查看是否恢复正常
 				//break
 				r.getOnline()
